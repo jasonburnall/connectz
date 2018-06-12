@@ -43,23 +43,6 @@ class GameException(Error):
 
 # Holds and handles anything to do with the ConnectZ game.
 class Game(object):
-    # _board_width = 0  # Maximum board width
-    # _board_height = 0  # Maximum board height
-    # _counters = 0  # Connect `n`
-    # # Define active area
-    # _active_game_start_column = 0
-    # _active_game_end_column = 0
-    # # _active_game_start_row = 0
-    # _active_game_end_row = 0
-    # # Game matrix
-    # _the_game = []
-    # # Lets keep track of the number of moves made
-    # _move_count = 0
-    # # Game conditions
-    # _player_one_win = False
-    # _player_two_win = False
-    # _draw = False
-    # _incomplete = True
 
     def __init__(self, conf):
         """
@@ -70,13 +53,10 @@ class Game(object):
         self._board_width = 0  # Maximum board width
         self._board_height = 0  # Maximum board height
         self._counters = 0  # Connect `n`
-        # Define active area
-        self._active_game_start_column = 0
-        self._active_game_end_column = 0
-        # _active_game_start_row = 0
-        self._active_game_end_row = 0
         # Game matrix
-        self._the_game = []
+        self._the_game = []  # This is the active board area
+        self._game_frequency = []  # Keep track of counter stack heights
+        self._max_virtual_height = 0  # This keeps track of the maximum counter stack height
         # Lets keep track of the number of moves made
         self._move_count = 0
         # Game conditions
@@ -100,6 +80,7 @@ class Game(object):
         self._board_width = lst_configs[0]
         self._board_height = lst_configs[1]
         self._counters = lst_configs[2]  # And consecutive counter count
+        self._game_frequency = [0] * self._board_width  # coin count
 
     def get_outcome(self):
         """
@@ -133,24 +114,25 @@ class Game(object):
             return True
         return False
 
-    def _check_horizontal_win(self):
+    def _check_horizontal_win(self, check_area):
         """
         Check to see if a player has `n` in a row.
+        :param check_area: list(list)
         :rtype: bool
         """
         b_have_winner = False
         # Build counter lists and check if all counters are the same
         # On a win update outcome and return True
-        for row_idx in range(self._active_game_end_row):
+        for row_idx in range(len(check_area)):
             # Moving up row
-            for column_idx in range(self._active_game_start_column - 1, self._active_game_end_column):
+            for column_idx in range(len(check_area[0])):
                 # Moving along columns
                 these_counters = []
                 b_check_counters = True
                 for count in range(self._counters):
                     # Extracting coins
                     try:
-                        these_counters.append(self._the_game[row_idx][column_idx + count])
+                        these_counters.append(check_area[row_idx][column_idx + count])
                     except IndexError:
                         b_check_counters = False
                         break  # Cell doesn't exist therefore end of row reached
@@ -163,24 +145,25 @@ class Game(object):
             # Then move to next row and repeat
         return b_have_winner
 
-    def _check_vertical_win(self):
+    def _check_vertical_win(self, check_area):
         """
         Check to see if a player has `n` in a column.
+        :param check_area: list(list)
         :rtype: bool
         """
         b_have_winner = False
         # Build counter lists and check if all counters are the same
         # On a win update outcome and return True
-        for row_idx in range(self._active_game_end_row):
+        for row_idx in range(len(check_area)):
             # Moving up row
-            for column_idx in range(self._active_game_start_column - 1, self._active_game_end_column):
+            for column_idx in range(len(check_area[0])):
                 # Moving along columns
                 these_counters = []
                 b_check_counters = True
                 for count in range(self._counters):
                     # Extracting coins
                     try:
-                        these_counters.append(self._the_game[row_idx + count][column_idx])
+                        these_counters.append(check_area[row_idx + count][column_idx])
                     except IndexError:
                         b_check_counters = False
                         break  # Cell doesn't exist therefore top of board reached
@@ -193,24 +176,25 @@ class Game(object):
             # Then move to next row and repeat
         return b_have_winner
 
-    def _check_diagonal_incline_win(self):
+    def _check_diagonal_incline_win(self, check_area):
         """
         Check to see if a player has `n` in a inclining diagonal.
+        :param check_area: list(list)
         :rtype: bool
         """
         b_have_winner = False
         # Build counter lists and check if all counters are the same
         # On a win update outcome and return True
-        for row_idx in range(self._active_game_end_row - 1):
+        for row_idx in range(len(check_area)):
             # Moving up row
-            for column_idx in range(self._active_game_start_column - 1, self._active_game_end_column - 1):
+            for column_idx in range(len(check_area[0])):
                 # Moving along columns
                 these_counters = []
                 b_check_counters = True
                 for count in range(self._counters):
                     # Extracting coins
                     try:
-                        these_counters.append(self._the_game[row_idx + count][column_idx + count])
+                        these_counters.append(check_area[row_idx + count][column_idx + count])
                     except IndexError:
                         b_check_counters = False
                         break  # Cell doesn't exist therefore edge of board reached
@@ -223,26 +207,25 @@ class Game(object):
             # Then move to next row and repeat
         return b_have_winner
 
-    def _check_diagonal_decline_win(self):
+    def _check_diagonal_decline_win(self, check_winner):
         """
         Check to see if a player has `n` in a declining diagonal.
+        :param check_area: list(list)
         :rtype: bool
         """
         b_have_winner = False
         # Build counter lists and check if all counters are the same
         # On a win update outcome and return True
-        for row_idx in range(self._active_game_end_row - 1, -1, -1):
+        for row_idx in range(len(check_winner)):
             # Moving down rows from top
-            for column_idx in range(self._active_game_start_column - 1, self._active_game_end_column - 1):
+            for column_idx in range(len(check_winner[0])):
                 # Moving along columns
                 these_counters = []
                 b_check_counters = True
                 for count in range(self._counters):
                     # Extracting coins
                     try:
-                        if row_idx - count < 0:
-                            raise IndexError  # Gone off bottom of board!
-                        these_counters.append(self._the_game[row_idx - count][column_idx + count])
+                        these_counters.append(check_winner[(row_idx + self._counters - 1)-count][column_idx + count])
                     except IndexError:
                         b_check_counters = False
                         break  # Cell doesn't exist therefore edge of board reached
@@ -255,10 +238,12 @@ class Game(object):
             # Then move to next row and repeat
         return b_have_winner
 
-    def _process_board(self):
+    def _process_board(self, coin_row_idx, coin_col_idx):
         """
         This is the main game engine and determines if the game has a winner or if the game is a draw.
         Sets one of the game outcome booleans on a completion state.
+        :param coin_row_idx: int  Row index on game where coin landed
+        :param coin_col_idx: int  Column index on game where coin landed
         """
         # Check to see if the game is already complete.
         if self._player_one_win or self._player_two_win or self._draw:
@@ -267,24 +252,23 @@ class Game(object):
         # No point running check unless minimum moves reached
         if self._move_count - (self._counters - 1) < self._counters:
             return False
-        # Only interested in active board space
-        if ((self._active_game_end_column - self._active_game_start_column) + 1 < self._counters) and (
-                self._active_game_end_row + 1 < self._counters):
-            return False  # The active board area can't accommodate a win
-        if self._active_game_end_row < self._counters:
-            # Only horizontal wins will work
-            return self._check_horizontal_win()
-        if (self._active_game_end_column - self._active_game_start_column) + 1 < self._counters:
-            # Only vertical wins can work due to horizontal distribution of counters
-            return self._check_vertical_win()
+        # Only interested in game area around coin
+        col_start = (coin_col_idx - 1) - (self._counters - 1)
+        if col_start < 0:
+            col_start = 0
+        row_start = coin_row_idx - (self._counters - 1)
+        if row_start < 0:
+            row_start = 0
+        sub = [item[col_start:coin_col_idx + self._counters] for item in self._the_game[row_start:coin_row_idx + self._counters]]
+        # Now test this area for a win
         # We have an active board area that requires all win vectors to be tested
-        if self._check_horizontal_win():
+        if self._check_horizontal_win(sub):
             return True
-        if self._check_vertical_win():
+        if self._check_vertical_win(sub):
             return True
-        if self._check_diagonal_incline_win():
+        if self._check_diagonal_incline_win(sub):
             return True
-        if self._check_diagonal_decline_win():
+        if self._check_diagonal_decline_win(sub):
             return True
         # Check for draw condition
         if self._move_count == (self._board_width * self._board_height):
@@ -319,43 +303,28 @@ class Game(object):
             # We shouldn't have got to here, too many moves.
             raise GameException(4)  # Illegal continue
         # Move seems valid so make it
-        if not self._the_game:
-            # No moves made yet so create a row
+        current_row_count = max(self._game_frequency)
+        self._game_frequency[column - 1] += 1  # Add a column coin count
+        if current_row_count > max(self._game_frequency):
+            # Need a new game row
             new_row = [0] * self._board_width
-            new_row[column - 1] = 1  # And add counter for player 1
-            self._the_game.append(new_row)  # Update the board
-            self._active_game_start_column = self._active_game_end_column = column  # And update active game space
-            self._active_game_end_row = 1
-        else:
-            b_coin_placed = False
-            row_idx = 0
-            # Find a row where the counter will stop
-            for row in self._the_game:
-                if not row[column - 1]:
-                    # No coin in the way
-                    self._the_game[row_idx][column - 1] = player
-                    b_coin_placed = True
-                    break
-                else:
-                    row_idx += 1  # Move to next row
-            if not b_coin_placed:
-                # All active rows are taken, need a new one
-                new_row = [0] * self._board_width
-                new_row[column - 1] = player  # And add counter for player
-                self._the_game.append(new_row)
-                # Quickly check that row count hasn't been exceeded
-                if len(self._the_game) > self._board_height:
-                    raise GameException(5)  # code 5 -- Illegal row
-            # Update active board space
-            if column < self._active_game_start_column:
-                self._active_game_start_column = column
-            if self._active_game_end_column < column:
-                self._active_game_end_column = column
-            if self._active_game_end_row < row_idx + 1:
-                self._active_game_end_row = row_idx + 1
+            self._the_game.append(new_row)
+            self._max_virtual_height += 1  # Update maximum coin stack count
+        # Check for too many rows
+        if self._max_virtual_height > self._board_height:
+            raise GameException(5)  # code 5 -- Illegal row
+        # Place the coin
+        coin_row_idx = self._game_frequency[column - 1]
+        coin_column_idx = column - 1
+        self._the_game[coin_row_idx][coin_column_idx] = player
+        # And remove bottom row if it is no longer in game play
+        if min(self._game_frequency) - self._counters > 0:
+            del self._the_game[0]  # Remove bottom row of board
+            self._game_frequency[:] = [cell - 1 for cell in self._game_frequency]  # Reduce column count too
+            coin_row_idx -= 1  # Update coin index
         self._move_count += 1  # Keep an eye in the number of moves
         # Now the board is updated, lets process the moves made
-        return self._process_board()
+        return self._process_board(coin_row_idx, coin_column_idx)
 
 
 class ConnectZ(object):
