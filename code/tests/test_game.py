@@ -130,6 +130,12 @@ class TestGame(unittest.TestCase):
         """
         self.assertEqual(ConnectZ("/usr/src/app/tests/player_one_win_decline.txt").run_game(), 1)
 
+    def test_player_two_win_with_tall_table(self):
+        """
+        Run player 1 wins with diagonal scenario
+        """
+        self.assertEqual(ConnectZ("/usr/src/app/tests/player_two_win_tall_table.txt").run_game(), 2)
+
 
 if __name__ == '__main__':
     unittest.main()
