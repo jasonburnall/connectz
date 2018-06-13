@@ -81,7 +81,7 @@ class Game(object):
         self._board_height = lst_configs[1]
         self._counters = lst_configs[2]  # And consecutive counter count
         self._game_frequency = [0] * self._board_width  # coin count
-
+        self._the_game = [0] * self._board_width
     def get_outcome(self):
         """
         Return the outcome of the game.
@@ -296,14 +296,16 @@ class Game(object):
         if player not in [1, 2]:
             raise Exception('Not a valid player')
         # Now check column number is within allowable board dimensions
-        if column > self._board_width:
+        if 0 > column > self._board_width:
             raise GameException(6)
         # Now check to see if this is one too many moves.
         if self._player_one_win or self._player_two_win or self._draw:
             # We shouldn't have got to here, too many moves.
             raise GameException(4)  # Illegal continue
         # Move seems valid so make it
-        current_row_count = max(self._game_frequency)
+        current_row_count = 1
+        if max(self._game_frequency):
+            current_row_count = max(self._game_frequency)
         self._game_frequency[column - 1] += 1  # Add a column coin count
         if current_row_count > max(self._game_frequency):
             # Need a new game row
@@ -314,6 +316,7 @@ class Game(object):
         if self._max_virtual_height > self._board_height:
             raise GameException(5)  # code 5 -- Illegal row
         # Place the coin
+        print(column - 1)
         coin_row_idx = self._game_frequency[column - 1]
         coin_column_idx = column - 1
         self._the_game[coin_row_idx][coin_column_idx] = player
