@@ -80,9 +80,10 @@ class Game(object):
         self._board_width = lst_configs[0]
         self._board_height = lst_configs[1]
         self._counters = lst_configs[2]  # And consecutive counter count
-        self._game_frequency = [0] * self._board_width  # coin count
-        self._the_game = [[0] * self._board_width]
-        self._max_virtual_height = 1
+        self._game_frequency = [0] * self._board_width  # coin count per column
+        self._the_game = [[0] * self._board_width]  # Define first row
+        self._max_virtual_height = 1  # Set current height of row
+
     def get_outcome(self):
         """
         Return the outcome of the game.
@@ -96,148 +97,6 @@ class Game(object):
             return 0
         if self._incomplete:
             return 3
-
-    def _check_counters(self, lst_counters):
-        """
-        Check if the argument list of counters are all the same.
-        :type lst_counters: list(int)
-        :rtype: bool
-        """
-        if lst_counters.count(1) == self._counters:
-            # Player 1 wins!
-            self._draw = self._player_two_win = self._incomplete = False
-            self._player_one_win = True
-            return True
-        if lst_counters.count(2) == self._counters:
-            # Player 2 wins!
-            self._draw = self._player_one_win = self._incomplete = False
-            self._player_two_win = True
-            return True
-        return False
-
-    def _check_horizontal_win(self, check_area):
-        """
-        Check to see if a player has `n` in a row.
-        :param check_area: list(list)
-        :rtype: bool
-        """
-        b_have_winner = False
-        # Build counter lists and check if all counters are the same
-        # On a win update outcome and return True
-        for row_idx in range(len(check_area)):
-            # Moving up row
-            for column_idx in range(len(check_area[0])):
-                # Moving along columns
-                these_counters = []
-                b_check_counters = True
-                for count in range(self._counters):
-                    # Extracting coins
-                    try:
-                        these_counters.append(check_area[row_idx][column_idx + count])
-                    except IndexError:
-                        b_check_counters = False
-                        break  # Cell doesn't exist therefore end of row reached
-                if b_check_counters:
-                    # Test these counters
-                    if self._check_counters(these_counters):
-                        # We have a winner
-                        b_have_winner = True
-                        return b_have_winner
-            # Then move to next row and repeat
-        return b_have_winner
-
-    def _check_vertical_win(self, check_area):
-        """
-        Check to see if a player has `n` in a column.
-        :param check_area: list(list)
-        :rtype: bool
-        """
-        b_have_winner = False
-        # Build counter lists and check if all counters are the same
-        # On a win update outcome and return True
-        for row_idx in range(len(check_area)):
-            # Moving up row
-            for column_idx in range(len(check_area[0])):
-                # Moving along columns
-                these_counters = []
-                b_check_counters = True
-                for count in range(self._counters):
-                    # Extracting coins
-                    try:
-                        these_counters.append(check_area[row_idx + count][column_idx])
-                    except IndexError:
-                        b_check_counters = False
-                        break  # Cell doesn't exist therefore top of board reached
-                if b_check_counters:
-                    # Test these counters
-                    if self._check_counters(these_counters):
-                        # We have a winner
-                        b_have_winner = True
-                        return b_have_winner
-            # Then move to next row and repeat
-        return b_have_winner
-
-    def _check_diagonal_incline_win(self, check_area):
-        """
-        Check to see if a player has `n` in a inclining diagonal.
-        :param check_area: list(list)
-        :rtype: bool
-        """
-        b_have_winner = False
-        # Build counter lists and check if all counters are the same
-        # On a win update outcome and return True
-        for row_idx in range(len(check_area)):
-            # Moving up row
-            for column_idx in range(len(check_area[0])):
-                # Moving along columns
-                these_counters = []
-                b_check_counters = True
-                for count in range(self._counters):
-                    # Extracting coins
-                    try:
-                        these_counters.append(check_area[row_idx + count][column_idx + count])
-                    except IndexError:
-                        b_check_counters = False
-                        break  # Cell doesn't exist therefore edge of board reached
-                if b_check_counters:
-                    # Test these counters
-                    if self._check_counters(these_counters):
-                        # We have a winner
-                        b_have_winner = True
-                        return b_have_winner
-            # Then move to next row and repeat
-        return b_have_winner
-
-    def _check_diagonal_decline_win(self, check_winner):
-        """
-        Check to see if a player has `n` in a declining diagonal.
-        :param check_area: list(list)
-        :rtype: bool
-        """
-        b_have_winner = False
-        # Build counter lists and check if all counters are the same
-        # On a win update outcome and return True
-        for row_idx in range(len(check_winner)):
-            # Moving down rows from top
-            for column_idx in range(len(check_winner[0])):
-                # Moving along columns
-                these_counters = []
-                b_check_counters = True
-                for count in range(self._counters):
-                    # Extracting coins
-                    try:
-                        these_counters.append(check_winner[(row_idx + self._counters - 1)-count][column_idx + count])
-                    except IndexError:
-                        b_check_counters = False
-                        break  # Cell doesn't exist therefore edge of board reached
-                if b_check_counters:
-                    # Test these counters
-                    if self._check_counters(these_counters):
-                        # We have a winner
-                        b_have_winner = True
-                        return b_have_winner
-            # Then move to next row and repeat
-        return b_have_winner
 
     def _process_board(self, coin_row_idx, coin_col_idx):
         """
@@ -253,23 +112,63 @@ class Game(object):
         # No point running check unless minimum moves reached
         if self._move_count - (self._counters - 1) < self._counters:
             return False
-        # Only interested in game area around coin
-        col_start = (coin_col_idx - 1) - (self._counters - 1)
-        if col_start < 0:
-            col_start = 0
-        row_start = coin_row_idx - (self._counters - 1)
-        if row_start < 0:
-            row_start = 0
-        sub = [item[col_start:coin_col_idx + self._counters] for item in self._the_game[row_start:coin_row_idx + self._counters]]
-        # Now test this area for a win
-        # We have an active board area that requires all win vectors to be tested
-        if self._check_horizontal_win(sub):
+        # Only interested in game vectors through coin of a maximum magnitude of `n` from coin
+        offset = (2 * self._counters) - 1
+        row_start = coin_row_idx - self._counters - 1
+        col_start = coin_col_idx - self._counters - 1
+        # Build vectors
+        int_down = 0  # Used in build declining vector
+        print("The Game: [{}][{}]".format(coin_row_idx, coin_col_idx))
+        for x in self._the_game:
+            print(x)
+        list_h = list_v = list_i = list_d = []
+        for row_idx in range(col_start, 2 * self._counters):
+            for col_idx in range(row_start, 2 * self._counters):
+                print("row_idx: {} col_idx: {}".format(row_idx, col_idx))
+                # horizontal
+                try:
+                    list_h.append(self._the_game[coin_row_idx][col_idx])
+                except IndexError:
+                    pass
+                # vertical
+                try:
+                    list_v.append(self._the_game[row_idx][coin_col_idx])
+                except IndexError:
+                    pass
+                # incline
+                try:
+                    list_i.append(self._the_game[row_idx][col_idx])
+                except IndexError:
+                    pass
+                # decline
+                try:
+                    list_d.append(self._the_game[(row_start + offset)-int_down][coin_col_idx])
+                    int_down += 1
+                except IndexError:
+                    pass
+        # Build strings to compare
+        horizontal = ''.join(map(str, list_h))
+        vertical = ''.join(map(str, list_v))
+        incline = ''.join(map(str, list_i))
+        decline = ''.join(map(str, list_d))
+        print("h: ".format(horizontal))
+        print("v: ".format(vertical))
+        print("i: ".format(incline))
+        print("d: ".format(decline))
+        list_p1_win = ['1'] * 10  # `n`
+        p1_win = ''.join(list_p1_win)
+        list_p2_win = ['2'] * 10  # `n`
+        p2_win = ''.join(list_p2_win)
+        # Check for win using
+        if p1_win in horizontal or p1_win in vertical or p1_win in incline or p1_win in decline:
+            # Player 1 wins!
+            self._draw = self._player_two_win = self._incomplete = False
+            self._player_one_win = True
             return True
-        if self._check_vertical_win(sub):
-            return True
-        if self._check_diagonal_incline_win(sub):
-            return True
-        if self._check_diagonal_decline_win(sub):
+        if p2_win in horizontal or p2_win in vertical or p2_win in incline or p2_win in decline:
+            # Player 2 wins!
+            self._draw = self._player_one_win = self._incomplete = False
+            self._player_two_win = True
             return True
         # Check for draw condition
         if self._move_count == (self._board_width * self._board_height):
