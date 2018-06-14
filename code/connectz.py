@@ -113,53 +113,49 @@ class Game(object):
         if self._move_count - (self._counters - 1) < self._counters:
             return False
         # Only interested in game vectors through coin of a maximum magnitude of `n` from coin
-        offset = (2 * self._counters) - 1
-        row_start = coin_row_idx - self._counters - 1
-        col_start = coin_col_idx - self._counters - 1
-        # Build vectors
-        int_down = 0  # Used in build declining vector
-        print("The Game: [{}][{}]".format(coin_row_idx, coin_col_idx))
-        for x in self._the_game:
-            print(x)
-        list_h = list_v = list_i = list_d = []
-        for row_idx in range(col_start, 2 * self._counters):
-            for col_idx in range(row_start, 2 * self._counters):
-                print("row_idx: {} col_idx: {}".format(row_idx, col_idx))
-                # horizontal
-                try:
-                    list_h.append(self._the_game[coin_row_idx][col_idx])
-                except IndexError:
-                    pass
-                # vertical
-                try:
-                    list_v.append(self._the_game[row_idx][coin_col_idx])
-                except IndexError:
-                    pass
-                # incline
-                try:
-                    list_i.append(self._the_game[row_idx][col_idx])
-                except IndexError:
-                    pass
-                # decline
-                try:
-                    list_d.append(self._the_game[(row_start + offset)-int_down][coin_col_idx])
-                    int_down += 1
-                except IndexError:
-                    pass
+        list_h = []
+        list_v = []
+        list_i = []
+        list_d = []
+        for x in range(-(self._counters - 1), self._counters):
+            try:
+                if coin_col_idx + x < 0:
+                    raise IndexError  # catch[-n] which can be valid
+                list_h.append(self._the_game[coin_row_idx][coin_col_idx + x])
+            except IndexError:
+                pass
+            try:
+                if coin_row_idx + x < 0:
+                    raise IndexError
+                list_v.append(self._the_game[coin_row_idx + x][coin_col_idx])
+            except IndexError:
+                pass
+            try:
+                if coin_row_idx + x < 0:
+                    raise IndexError
+                if coin_col_idx + x < 0:
+                    raise IndexError
+                list_i.append(self._the_game[coin_row_idx + x][coin_col_idx + x])
+            except IndexError:
+                pass
+            try:
+                if coin_row_idx - x < 0:
+                    raise IndexError
+                if coin_col_idx + x < 0:
+                    raise IndexError
+                list_d.append(self._the_game[coin_row_idx - x][coin_col_idx + x])
+            except IndexError:
+                pass
         # Build strings to compare
         horizontal = ''.join(map(str, list_h))
         vertical = ''.join(map(str, list_v))
         incline = ''.join(map(str, list_i))
         decline = ''.join(map(str, list_d))
-        print("h: ".format(horizontal))
-        print("v: ".format(vertical))
-        print("i: ".format(incline))
-        print("d: ".format(decline))
-        list_p1_win = ['1'] * 10  # `n`
+        list_p1_win = ['1'] * self._counters  # `n`
         p1_win = ''.join(list_p1_win)
-        list_p2_win = ['2'] * 10  # `n`
+        list_p2_win = ['2'] * self._counters  # `n`
         p2_win = ''.join(list_p2_win)
-        # Check for win using
+        # Check for win using vertices strings
         if p1_win in horizontal or p1_win in vertical or p1_win in incline or p1_win in decline:
             # Player 1 wins!
             self._draw = self._player_two_win = self._incomplete = False
@@ -219,9 +215,6 @@ class Game(object):
         coin_row_idx = self._game_frequency[column - 1] - 1
         coin_column_idx = column - 1
         self._the_game[coin_row_idx][coin_column_idx] = player
-        print('Next Go')
-        for x in self._the_game:
-            print(x)
         # And remove bottom row if it is no longer in game play
         if min(self._game_frequency) - self._counters > 0:
             del self._the_game[0]  # Remove bottom row of board
