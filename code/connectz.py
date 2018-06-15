@@ -5,9 +5,7 @@
 #
 # The idea is to hold the game in a matrix that can not exceed the board height/width restrictions defined in the
 # game file.
-# Game outcome is decided by tests against the `active` board area to save processing. For instance, if game coins are
-# only within columns 1 to 3, there is no need to test for a game win outside of a virtual board width of '3'.
-# Similarly for coin stack height.
+# Game outcome is decided by tests against vertices running through the last coin dropped.
 #
 # No winner tests will be applied until the active board area equals or exceeds the required consecutive counter count.
 #
@@ -112,7 +110,7 @@ class Game(object):
         # No point running check unless minimum moves reached
         if self._move_count - (self._counters - 1) < self._counters:
             return False
-        # Only interested in game vectors through coin of a maximum magnitude of `n` from coin
+        # Only interested in game vectors through coin of a maximum magnitude of `z` from coin
         list_h = []
         list_v = []
         list_i = []
@@ -120,7 +118,7 @@ class Game(object):
         for x in range(-(self._counters - 1), self._counters):
             try:
                 if coin_col_idx + x < 0:
-                    raise IndexError  # catch[-n] which can be valid
+                    raise IndexError  # catch[-n] which can be valid in list
                 list_h.append(self._the_game[coin_row_idx][coin_col_idx + x])
             except IndexError:
                 pass
@@ -146,16 +144,16 @@ class Game(object):
                 list_d.append(self._the_game[coin_row_idx - x][coin_col_idx + x])
             except IndexError:
                 pass
-        # Build strings to compare
+        # Build strings to use in comparison
         horizontal = ''.join(map(str, list_h))
         vertical = ''.join(map(str, list_v))
         incline = ''.join(map(str, list_i))
         decline = ''.join(map(str, list_d))
-        list_p1_win = ['1'] * self._counters  # `n`
+        list_p1_win = ['1'] * self._counters  # `z`
         p1_win = ''.join(list_p1_win)
-        list_p2_win = ['2'] * self._counters  # `n`
+        list_p2_win = ['2'] * self._counters  # `z`
         p2_win = ''.join(list_p2_win)
-        # Check for win using vertices strings
+        # Check for win looking for win condition in vertices strings
         if p1_win in horizontal or p1_win in vertical or p1_win in incline or p1_win in decline:
             # Player 1 wins!
             self._draw = self._player_two_win = self._incomplete = False
